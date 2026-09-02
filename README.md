@@ -4,7 +4,7 @@ Team drinking game for movie nights. Split into two teams, pick a film, and each
 team gets rules drawn from that film's **actual** plot — tap a rule when it
 happens on screen.
 
-Live: cinesip.dseniv.cc
+Live: [cinesip.dseniv.cc](https://cinesip.dseniv.cc)
 
 ## How it works
 
