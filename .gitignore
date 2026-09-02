@@ -1,9 +1,41 @@
+# ── Secrets — never commit ──
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!**/id_ed25519.pub
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# ── Node ──
 node_modules/
 dist/
-__pycache__/
-*.pyc
-.env
-cinesip.db
+dist-ssr/
+.vite/
+*.local
+
+# ── Database (runtime state, not source) ──
+*.db
+*.db-shm
+*.db-wal
 data/
-.env
-deploy.sh.bak
+
+# ── OS / editor ──
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# ── Logs ──
+*.log
+npm-debug.log*

@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A newer push supersedes an in-flight run on the same branch.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npx oxlint src/
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      # Guardrails from AGENTS.md, enforced rather than trusted.
+      - name: Design guardrails
+        working-directory: frontend
+        run: |
+          fail=0
+
+          # A hardcoded localhost API breaks every phone on the network.
+          # Match real code only — an explanatory comment is fine.
+          if grep -rn "localhost:8000" src/ | grep -vE '^\s*[^:]+:[0-9]+:\s*(//|\*|/\*)'; then
+            echo "::error::Hardcoded localhost:8000 in src/ — API_BASE must stay same-origin"
+            fail=1
+          fi
+
+          # Dark-room design rule: no gradients or glows.
+          if grep -rn "linear-gradient\|radial-gradient" src/; then
+            echo "::error::Gradient found — banned (lights the room, kills night vision)"
+            fail=1
+          fi
+
+          # Raw hex in components bypasses the token system.
+          if grep -rnE "#[0-9a-fA-F]{6}" src/pages/ src/App.jsx 2>/dev/null; then
+            echo "::error::Raw hex colour in a component — use semantic tokens from app.css"
+            fail=1
+          fi
+
+          exit $fail
+
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi uvicorn aiosqlite httpx python-dotenv pydantic ruff
+
+      - name: Lint
+        working-directory: backend
+        run: ruff check app/
+
+      - name: Import check
+        working-directory: backend
+        run: python -c "from app.main import app; print(f'{len(app.routes)} routes registered')"
+
+      # Boot the real server and hit it — catches wiring errors a unit test misses.
+      - name: Smoke test
+        working-directory: backend
+        run: |
+          uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/health >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000/health | grep -q '"status":"ok"'
+          curl -sf http://127.0.0.1:8000/api/health | grep -q '"status":"ok"'
+
+          # Full game lifecycle against the live app
+          CODE=$(curl -sf -X POST http://127.0.0.1:8000/api/games \
+            -H 'Content-Type: application/json' -d '{"movie_title":"CI Test"}' \
+            | python -c "import sys,json; print(json.load(sys.stdin)['code'])")
+          echo "game $CODE"
+
+          GID=$(curl -sf http://127.0.0.1:8000/api/games/$CODE \
+            | python -c "import sys,json; print(json.load(sys.stdin)['game']['id'])")
+
+          curl -sf -X POST http://127.0.0.1:8000/api/games/join \
+            -H 'Content-Type: application/json' \
+            -d "{\"code\":\"$CODE\",\"name\":\"CI\"}" >/dev/null
+
+          curl -sf -X POST http://127.0.0.1:8000/api/games/$GID/rules \
+            -H 'Content-Type: application/json' \
+            -d "{\"game_id\":$GID,\"team\":0,\"description\":\"ci rule\"}" >/dev/null
+
+          curl -sf -X POST http://127.0.0.1:8000/api/games/$GID/start >/dev/null
+          echo "lifecycle ok"
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan tracked files for credentials
+        run: |
+          fail=0
+
+          if git ls-files | grep -E '(^|/)\.env$'; then
+            echo "::error::.env is tracked — it must stay gitignored"
+            fail=1
+          fi
+
+          # OpenRouter keys
+          if git grep -nE 'sk-or-v1-[A-Za-z0-9]{20,}' -- . ; then
+            echo "::error::OpenRouter API key committed"
+            fail=1
+          fi
+
+          # A bare 32-char hex string is TMDB-key shaped; .env.example is exempt.
+          if git grep -nE '\b[0-9a-f]{32}\b' -- . ':(exclude).env.example' ':(exclude)*.lock' ':(exclude)*-lock.json'; then
+            echo "::error::Possible TMDB API key committed"
+            fail=1
+          fi
+
+          exit $fail
