@@ -1,54 +1,88 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import usePlayerStore from '../store/playerStore';
 import useGameStore from '../store/gameStore';
-import { getGameState, logDrink } from '../services/api';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { getGameState, logDrink, finishGame } from '../services/api';
 
 export default function Game() {
   const { code } = useParams();
   const navigate = useNavigate();
-  const { player, players } = usePlayerStore();
-  const { rules, drinkCounts, logDrink: trackDrink } = useGameStore();
-  const [game, setGame] = useState(null);
-  const [alert, setAlert] = useState(null);
+  const { player, players, setPlayers } = usePlayerStore();
+  const { rules, setRules } = useGameStore();
 
-  const myTeam = players.find(p => p.id === player?.id)?.team ?? 0;
-  const myRules = rules.filter(r => r.team === myTeam);
-  const otherRules = rules.filter(r => r.team !== myTeam);
+  const [game, setGame] = useState(null);
+  const [drinkLogs, setDrinkLogs] = useState([]);
+  const [alert, setAlert] = useState(null);
+  const [ending, setEnding] = useState(false);
+
+  const myTeam = players.find((p) => p.id === player?.id)?.team ?? 0;
+  const otherTeam = myTeam === 0 ? 1 : 0;
+  const myRules = rules.filter((r) => r.team === myTeam);
+  const otherRules = rules.filter((r) => r.team !== myTeam);
+
+  // Drink totals derived from server logs — every device sees the same numbers.
+  const teamDrinks = useMemo(() => {
+    const byPlayer = new Map(players.map((p) => [p.id, p.team]));
+    const totals = { 0: 0, 1: 0 };
+    for (const log of drinkLogs) {
+      const team = byPlayer.get(log.player_id);
+      if (team === 0 || team === 1) totals[team] += 1;
+    }
+    return totals;
+  }, [drinkLogs, players]);
 
   const refresh = useCallback(async () => {
     try {
       const state = await getGameState(code);
       setGame(state.game);
+      setPlayers(state.players || []);
+      setRules(state.rules || []);
+      setDrinkLogs(state.drink_logs || []);
       if (state.game?.status === 'finished') {
         navigate(`/results/${code}`, { replace: true });
       }
     } catch (e) {
-      console.error(e);
+      console.error('Game refresh failed', e);
     }
-  }, [code, navigate]);
+  }, [code, navigate, setPlayers, setRules]);
 
   useEffect(() => {
     refresh();
-    const i = setInterval(refresh, 3000);
+    const i = setInterval(refresh, 2500);
     return () => clearInterval(i);
   }, [refresh]);
 
   const handleDrink = async (rule) => {
-    if (!player?.id) return;
+    if (!player?.id || !game) return;
+    // Optimistic: show the call-out instantly, reconcile on next poll.
+    setAlert({ team: rule.team, text: rule.description });
+    setTimeout(() => setAlert(null), 3000);
     try {
       await logDrink(game.id, player.id, rule.id);
-      trackDrink(player.id, rule.team);
-      setAlert({ team: rule.team, text: rule.description });
-      setTimeout(() => setAlert(null), 3000);
+      refresh();
     } catch (e) {
-      console.error(e);
+      console.error('Failed to log drink', e);
     }
   };
 
-  if (!game) return <div className="flex-1 flex items-center justify-center"><div className="loading-spinner">Loading game...</div></div>;
+  const handleEnd = async () => {
+    setEnding(true);
+    try {
+      await finishGame(game.id);
+      navigate(`/results/${code}`, { replace: true });
+    } catch (e) {
+      console.error(e);
+      setEnding(false);
+    }
+  };
+
+  if (!game) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="loading-spinner">Loading game...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col gap-6">
@@ -65,35 +99,53 @@ export default function Game() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {/* My Team */}
+        {/* Your team — tappable */}
         <div className={`team-panel ${myTeam === 0 ? 'team-a' : 'team-b'}`}>
           <div className="team-header">
-            <h3 className="font-semibold">{myTeam === 0 ? '🔵 Your Team (Blue)' : '🔴 Your Team (Red)'}</h3>
-            <span className="font-mono text-lg font-bold text-orange-500">🍺 {drinkCounts[myTeam] || 0}</span>
+            <h3 className="font-semibold">
+              {myTeam === 0 ? '🔵 Your Team (Blue)' : '🔴 Your Team (Red)'}
+            </h3>
+            <span className="font-mono text-lg font-bold text-orange-500">
+              🍺 {teamDrinks[myTeam]}
+            </span>
           </div>
           <div className="flex flex-col gap-2">
-            {myRules.map(rule => (
+            {myRules.map((rule) => (
               <div key={rule.id} className="rule-row" onClick={() => handleDrink(rule)}>
                 <span className="flex-1">{rule.description}</span>
-                <span className="font-mono text-xs text-text-muted min-w-6 text-center">{rule.trigger_count || 0}x</span>
-                <button className="drink-hit" onClick={e => { e.stopPropagation(); handleDrink(rule); }}>🍻</button>
+                <span className="font-mono text-xs text-text-muted min-w-6 text-center">
+                  {rule.trigger_count || 0}x
+                </span>
+                <button
+                  className="drink-hit"
+                  aria-label={`Drink for: ${rule.description}`}
+                  onClick={(e) => { e.stopPropagation(); handleDrink(rule); }}
+                >
+                  🍻
+                </button>
               </div>
             ))}
             {myRules.length === 0 && <p className="empty-state">No rules assigned</p>}
           </div>
         </div>
 
-        {/* Other Team */}
+        {/* Opposing team — read only */}
         <div className="team-panel opacity-70">
           <div className="team-header">
-            <h3 className="font-semibold">{myTeam !== 0 ? '🔵 Team Blue' : '🔴 Team Red'}</h3>
-            <span className="font-mono text-lg font-bold text-orange-500">🍺 {drinkCounts[myTeam === 0 ? 1 : 0] || 0}</span>
+            <h3 className="font-semibold">
+              {otherTeam === 0 ? '🔵 Team Blue' : '🔴 Team Red'}
+            </h3>
+            <span className="font-mono text-lg font-bold text-orange-500">
+              🍺 {teamDrinks[otherTeam]}
+            </span>
           </div>
           <div className="flex flex-col gap-2">
-            {otherRules.map(rule => (
+            {otherRules.map((rule) => (
               <div key={rule.id} className="rule-row">
                 <span className="flex-1">{rule.description}</span>
-                <span className="font-mono text-xs text-text-muted min-w-6 text-center">{rule.trigger_count || 0}x</span>
+                <span className="font-mono text-xs text-text-muted min-w-6 text-center">
+                  {rule.trigger_count || 0}x
+                </span>
               </div>
             ))}
             {otherRules.length === 0 && <p className="empty-state">No rules assigned</p>}
@@ -104,7 +156,7 @@ export default function Game() {
       <div>
         <h3 className="section-title">Players Online</h3>
         <div className="grid grid-cols-2 gap-2">
-          {players.map(p => (
+          {players.map((p) => (
             <div key={p.id} className={`player-badge ${p.team === 0 ? 'team-a' : 'team-b'}`}>
               <div className="avatar">{p.name[0].toUpperCase()}</div>
               <span className="flex-1 font-medium truncate">{p.name}</span>
@@ -113,14 +165,8 @@ export default function Game() {
         </div>
       </div>
 
-      <button
-        className="btn btn-secondary btn-full"
-        onClick={async () => {
-          await fetch(`${API_BASE}/api/games/${game.id}/finish`, { method: 'POST' });
-          navigate(`/results/${code}`, { replace: true });
-        }}
-      >
-        🏁 End Game
+      <button className="btn btn-secondary btn-full" onClick={handleEnd} disabled={ending}>
+        {ending ? 'Ending…' : '🏁 End Game'}
       </button>
     </div>
   );

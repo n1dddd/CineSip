@@ -1,8 +1,9 @@
 services:
   backend:
     build: ./backend
-    ports:
-      - "8000:8000"
+    # No public port: nginx (frontend) reaches it over the compose network.
+    expose:
+      - "8000"
     environment:
       - TMDB_API_KEY=${TMDB_API_KEY}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}

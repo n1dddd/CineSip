@@ -27,3 +27,9 @@ app.include_router(movies.router)
 async def health():
     """Health check endpoint."""
     return {"status": "ok", "service": "cinesip"}
+
+
+@app.get("/api/health")
+async def api_health():
+    """Same health check, reachable through the nginx /api/ proxy."""
+    return {"status": "ok", "service": "cinesip"}

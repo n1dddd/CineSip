@@ -105,6 +105,24 @@ async def finish_game(game_id: int) -> GameOut:
     return await get_game_by_id(game_id)
 
 
+async def set_movie(game_id: int, movie_title: str, movie_id: int) -> GameOut | None:
+    """Attach a TMDB movie to an existing game."""
+    db = await get_db()
+    await db.execute(
+        "UPDATE games SET movie_title = ?, movie_id = ? WHERE id = ?",
+        (movie_title, movie_id, game_id),
+    )
+    await db.commit()
+    return await get_game_by_id(game_id)
+
+
+async def clear_rules(game_id: int) -> None:
+    """Remove all rules for a game (used when re-picking a movie)."""
+    db = await get_db()
+    await db.execute("DELETE FROM rules WHERE game_id = ?", (game_id,))
+    await db.commit()
+
+
 async def add_rule(game_id: int, team: int, description: str) -> RuleOut:
     db = await get_db()
     cursor = await db.execute(

@@ -16,8 +16,10 @@ export default function Home() {
     setLoading(true);
     try {
       const game = await createGame();
+      // Host must also join so they get a real player row (and can log drinks).
+      const me = await joinGame(game.code, name.trim());
       saveName(name.trim());
-      setPlayer({ id: null, name: name.trim(), isHost: true });
+      setPlayer({ id: me.id, name: me.name, isHost: me.is_host });
       navigate(`/lobby/${game.code}`);
     } catch (e) {
       setError('Failed to create game');

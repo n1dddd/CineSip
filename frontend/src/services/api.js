@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Same-origin by default: nginx proxies /api/ -> backend:8000.
+// Works on any host/domain (phone, LAN IP, cinesip.dseniv.cc) with no rebuild.
+// In `vite dev`, vite.config.js proxies /api to localhost:8000.
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 export async function createGame(movieTitle = null) {
   const res = await fetch(`${API_BASE}/api/games`, {
@@ -32,6 +35,12 @@ export async function startGame(gameId) {
   return res.json();
 }
 
+export async function finishGame(gameId) {
+  const res = await fetch(`${API_BASE}/api/games/${gameId}/finish`, { method: 'POST' });
+  if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+  return res.json();
+}
+
 export async function logDrink(gameId, playerId, ruleId) {
   const res = await fetch(`${API_BASE}/api/games/${gameId}/drinks`, {
     method: 'POST',
@@ -54,6 +63,16 @@ export async function searchMovies(query) {
   }));
 }
 
+export async function selectMovie(gameId, movieId, movieTitle) {
+  const res = await fetch(`${API_BASE}/api/games/${gameId}/movie`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ movie_id: movieId, movie_title: movieTitle }),
+  });
+  if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+  return res.json();
+}
+
 export async function addRule(gameId, team, description) {
   const res = await fetch(`${API_BASE}/api/games/${gameId}/rules`, {
     method: 'POST',
@@ -64,4 +83,4 @@ export async function addRule(gameId, team, description) {
   return res.json();
 }
 
-export default { createGame, joinGame, getGameState, startGame, logDrink, searchMovies, addRule };
+export default { createGame, joinGame, getGameState, startGame, finishGame, logDrink, searchMovies, selectMovie, addRule };
