@@ -16,219 +16,188 @@ export default function Lobby() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [writing, setWriting] = useState(false);
   const [error, setError] = useState('');
-  const debounceRef = useRef(null);
+  const debounce = useRef(null);
 
   const refresh = useCallback(async () => {
     try {
-      const state = await getGameState(code);
-      setGame(state.game);
-      setPlayers(state.players || []);
-      setRules(state.rules || []);
-      if (state.game?.status === 'active') {
-        navigate(`/game/${code}`, { replace: true });
-      }
-    } catch (e) {
-      console.error('Lobby refresh failed', e);
+      const s = await getGameState(code);
+      setGame(s.game);
+      setPlayers(s.players || []);
+      setRules(s.rules || []);
+      if (s.game?.status === 'active') navigate(`/game/${code}`, { replace: true });
+    } catch {
+      /* transient poll failure — next tick retries */
     }
   }, [code, navigate, setPlayers, setRules]);
 
   useEffect(() => {
     refresh();
-    const i = setInterval(refresh, 2000);
-    return () => clearInterval(i);
+    const t = setInterval(refresh, 2000);
+    return () => clearInterval(t);
   }, [refresh]);
 
-  // Debounced TMDB search (host only)
   useEffect(() => {
     if (!isHost) return;
-    if (query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    if (query.trim().length < 2) { setResults([]); return; }
+    clearTimeout(debounce.current);
+    debounce.current = setTimeout(async () => {
       setSearching(true);
       try {
         setResults((await searchMovies(query.trim())).slice(0, 6));
       } catch {
-        setError('Movie search unavailable');
+        setError('Search is unavailable right now');
       }
       setSearching(false);
     }, 350);
-    return () => clearTimeout(debounceRef.current);
+    return () => clearTimeout(debounce.current);
   }, [query, isHost]);
 
-  const handlePickMovie = async (movie) => {
-    setGenerating(true);
+  const pick = async (movie) => {
+    setWriting(true);
     setError('');
     setResults([]);
     setQuery('');
     try {
       await selectMovie(game.id, movie.id, movie.title);
       await refresh();
-    } catch (e) {
-      setError('Could not generate rules. Try another title.');
+    } catch {
+      setError('Could not write rules for that title. Try another.');
     }
-    setGenerating(false);
+    setWriting(false);
   };
 
-  const copyCode = () => {
-    navigator.clipboard.writeText(code);
+  const copy = () => {
+    navigator.clipboard?.writeText(code);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1800);
   };
 
-  const handleStart = async () => {
+  const begin = async () => {
     try {
       await startGame(game.id);
       navigate(`/game/${code}`, { replace: true });
-    } catch (e) {
+    } catch {
       setError('Could not start the game');
     }
   };
 
-  if (!game) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="loading-spinner">Loading lobby...</div>
-      </div>
-    );
-  }
+  if (!game) return <div className="loading-note">Loading lobby…</div>;
 
   const teamA = players.filter((p) => p.team === 0);
   const teamB = players.filter((p) => p.team === 1);
   const hasMovie = Boolean(game.movie_title);
-  const hasRules = rules.length > 0;
-  const canStart = players.length >= 2 && hasRules;
+  const ready = players.length >= 2 && rules.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col gap-6">
-      <button className="btn-back" onClick={() => navigate('/')}>← Back</button>
+    <div className="flex-1 flex flex-col" style={{ gap: 26 }}>
+      <button className="btn btn-ghost" onClick={() => navigate('/')}>← Leave</button>
 
-      <div className="text-center py-4">
-        <h3 className="section-title">Room Code</h3>
-        <code
-          className="block font-mono text-3xl tracking-[0.3em] text-cyan-500 select-all cursor-pointer"
-          onClick={copyCode}
-        >
-          {code}
-        </code>
-        <p className="text-xs text-text-muted mt-2">
-          {copied ? '✓ Copied!' : 'Tap to copy — share with friends'}
-        </p>
+      <div className="ticket" onClick={copy}>
+        <p className="eyebrow">Room code</p>
+        <code className="ticket-code">{code}</code>
+        <p className="ticket-hint">{copied ? 'Copied to clipboard' : 'Tap to copy · share with the room'}</p>
+        <div className="ticket-perf"><span>Admit {players.length}</span></div>
       </div>
 
-      {/* Movie selection */}
-      <div>
-        <h3 className="section-title">Movie</h3>
+      {/* Feature */}
+      <section>
+        <p className="section-label">Tonight's feature</p>
 
         {hasMovie ? (
-          <div className="card flex items-center gap-3">
-            <span className="text-2xl">🎬</span>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold truncate">{game.movie_title}</div>
-              <div className="text-xs text-text-muted">
-                {generating
-                  ? 'Generating rules…'
-                  : hasRules
-                    ? `${rules.length} rules ready`
+          <div className="now-playing">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="now-playing-title">{game.movie_title}</div>
+              <div className="now-playing-meta">
+                {writing
+                  ? 'Writing rules…'
+                  : rules.length > 0
+                    ? `${rules.length} rules · ${rules.length / 2} per team`
                     : 'No rules yet'}
               </div>
             </div>
+            {writing && <div className="pulse-dot" style={{ marginTop: 7 }} />}
           </div>
-        ) : isHost ? (
-          <p className="text-xs text-text-muted mb-2">
-            Search a movie or show — rules are generated from its real plot.
-          </p>
-        ) : (
-          <p className="empty-state">Waiting for the host to pick a movie…</p>
-        )}
+        ) : !isHost ? (
+          <p className="empty-note">Waiting for the host to choose a film…</p>
+        ) : null}
 
-        {isHost && !generating && (
-          <>
+        {isHost && !writing && (
+          <div style={{ marginTop: hasMovie ? 12 : 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <input
-              className="input mt-2"
-              placeholder={hasMovie ? 'Change movie…' : 'Search a movie or show'}
+              className="input"
+              placeholder={hasMovie ? 'Change the film…' : 'Search a film or series'}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              autoComplete="off"
             />
-            {searching && <p className="text-xs text-text-muted mt-2">Searching…</p>}
+            {searching && <p className="empty-note" style={{ padding: '4px 0' }}>Searching…</p>}
             {results.length > 0 && (
-              <div className="flex flex-col gap-2 mt-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {results.map((m) => (
-                  <button
-                    key={m.id}
-                    className="movie-result text-left"
-                    onClick={() => handlePickMovie(m)}
-                  >
-                    <div className="text-xl">🎞️</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">{m.title}</div>
-                      <div className="text-xs text-text-muted">{m.year}</div>
+                  <button key={m.id} className="result" onClick={() => pick(m)}>
+                    {m.poster?.startsWith('http')
+                      ? <img className="result-poster" src={m.poster} alt="" loading="lazy" />
+                      : <div className="result-poster">◍</div>}
+                    <div style={{ minWidth: 0 }}>
+                      <div className="result-title">{m.title}</div>
+                      <div className="result-year">{m.year}</div>
                     </div>
                   </button>
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
-
-        {generating && (
-          <div className="loading-spinner">🍿 Writing your rules…</div>
-        )}
-      </div>
+      </section>
 
       {/* Teams */}
-      <div>
-        <h3 className="section-title">Teams</h3>
-        <div className="flex gap-3">
-          <div className="team-panel team-a text-center">
-            <h3 className="text-cyan-500 font-semibold">🔵 Team Blue</h3>
-            <p className="text-text-muted text-sm mt-1">{teamA.length} players</p>
+      <section>
+        <p className="section-label">Teams</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div className="team team-a" style={{ padding: '13px 15px' }}>
+            <div className="team-name">Amber</div>
+            <div className="team-tally" style={{ marginTop: 4 }}>
+              {teamA.length}<span className="team-tally-unit">player{teamA.length === 1 ? '' : 's'}</span>
+            </div>
           </div>
-          <div className="team-panel team-b text-center">
-            <h3 className="text-pink-500 font-semibold">🔴 Team Red</h3>
-            <p className="text-text-muted text-sm mt-1">{teamB.length} players</p>
+          <div className="team team-b" style={{ padding: '13px 15px' }}>
+            <div className="team-name">Teal</div>
+            <div className="team-tally" style={{ marginTop: 4 }}>
+              {teamB.length}<span className="team-tally-unit">player{teamB.length === 1 ? '' : 's'}</span>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Players */}
-      <div>
-        <h3 className="section-title">Players ({players.length})</h3>
+      <section>
+        <p className="section-label">In the room</p>
         {players.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
             {players.map((p) => (
-              <div
-                key={p.id}
-                className={`player-badge ${p.team === 0 ? 'team-a' : 'team-b'}`}
-              >
-                <div className="avatar">{p.name[0].toUpperCase()}</div>
-                <span className="flex-1 font-medium truncate">{p.name}</span>
-                {p.is_host && <span>👑</span>}
+              <div key={p.id} className={`player ${p.team === 0 ? 'player-a' : 'player-b'}`}>
+                <div className="player-mark">{p.name[0].toUpperCase()}</div>
+                <span className="player-name">{p.name}</span>
+                {p.is_host && <span className="player-host">Host</span>}
               </div>
             ))}
           </div>
         ) : (
-          <p className="empty-state">Waiting for players…</p>
+          <p className="empty-note">Nobody here yet</p>
         )}
-      </div>
+      </section>
 
-      {error && <p className="error-msg">{error}</p>}
+      {error && <p className="error-note">{error}</p>}
 
       {isHost && (
-        <button
-          className="btn btn-primary btn-full btn-lg"
-          onClick={handleStart}
-          disabled={!canStart || generating}
-        >
+        <button className="btn btn-primary btn-full" onClick={begin} disabled={!ready || writing}>
           {players.length < 2
-            ? 'Need at least 2 players'
-            : !hasRules
-              ? 'Pick a movie first'
-              : '🍻 Start the Game!'}
+            ? 'Waiting for one more player'
+            : rules.length === 0
+              ? 'Choose a film first'
+              : 'Begin'}
         </button>
       )}
     </div>

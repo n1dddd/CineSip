@@ -1,347 +1,809 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════
+   CineSip design tokens
+
+   Context drives every decision here: this app is used in a
+   DARK ROOM, mid-film, by people who are drinking. So:
+     - no glows or gradients (they light the room, kill night vision)
+     - warm near-black, never blue-black (warm reads calmer at night)
+     - cream text, never pure white (less glare at low light)
+     - teal/orange team split — the classic cinema colour grade,
+       and a colourblind-safe pair (differs in hue AND temperature)
+     - one loud element per screen: the DRINK button
+   ═══════════════════════════════════════════════════════════ */
+
 @theme {
-  --color-neutral-50: #f0f0f5;
-  --color-neutral-100: #d0d0d8;
-  --color-neutral-200: #b0b0c8;
-  --color-neutral-300: #8a8aa8;
-  --color-neutral-400: #6a6a8a;
-  --color-neutral-500: #4a4a6a;
-  --color-neutral-600: #353550;
-  --color-neutral-700: #252540;
-  --color-neutral-800: #1a1a30;
-  --color-neutral-900: #12121f;
-  --color-neutral-950: #0a0a12;
+  /* ── Tier 1: primitives ───────────────────────────────── */
 
-  --color-pink-400: #ff6bb5;
-  --color-pink-500: #ff2d95;
-  --color-pink-600: #cc0080;
-  --color-cyan-400: #80f0ff;
-  --color-cyan-500: #00e5ff;
-  --color-cyan-600: #00a0b8;
-  --color-purple-400: #d08fff;
-  --color-purple-500: #b44dff;
-  --color-purple-600: #8820dd;
-  --color-green-400: #7dff5e;
-  --color-green-500: #39ff14;
-  --color-green-600: #1ab800;
-  --color-orange-400: #ff9944;
-  --color-orange-500: #ff6d00;
-  --color-orange-600: #cc5500;
-  --color-yellow-400: #fff566;
-  --color-yellow-500: #ffea00;
-  --color-yellow-600: #ccbb00;
+  /* Warm ink — the room, not a screen */
+  --color-ink-950: #0a0908;
+  --color-ink-900: #121110;
+  --color-ink-850: #191716;
+  --color-ink-800: #211f1d;
+  --color-ink-700: #2c2926;
+  --color-ink-600: #3b3733;
+  --color-ink-500: #56504a;
 
-  --color-surface-primary: var(--color-neutral-950);
-  --color-surface-secondary: var(--color-neutral-900);
-  --color-surface-card: var(--color-neutral-800);
-  --color-surface-elevated: var(--color-neutral-700);
-  --color-surface-input: var(--color-neutral-800);
+  /* Cream — paper, not fluorescent */
+  --color-cream-100: #f4efe8;
+  --color-cream-200: #ded7cd;
+  --color-cream-300: #a89f95;
+  --color-cream-400: #7c736a;
 
-  --color-text-primary: var(--color-neutral-50);
-  --color-text-secondary: var(--color-neutral-200);
-  --color-text-muted: var(--color-neutral-400);
-  --color-text-inverse: var(--color-neutral-950);
+  /* Amber — projector bulb, whisky */
+  --color-amber-300: #f0c07a;
+  --color-amber-400: #e5a851;
+  --color-amber-500: #d1902f;
+  --color-amber-600: #a86f1d;
 
-  --color-border-default: rgba(255, 255, 255, 0.08);
-  --color-border-hover: rgba(255, 255, 255, 0.15);
-  --color-border-focus: var(--color-cyan-500);
+  /* Teal — the other half of the cinema grade */
+  --color-teal-300: #7fc4c2;
+  --color-teal-400: #4da8a5;
+  --color-teal-500: #368a87;
+  --color-teal-600: #266b69;
 
-  --color-action-primary: var(--color-pink-500);
-  --color-action-secondary: var(--color-purple-500);
-  --color-action-success: var(--color-green-500);
-  --color-action-warning: var(--color-orange-500);
+  /* Signal only — never decoration */
+  --color-danger-400: #d4726a;
 
-  --color-team-a: var(--color-cyan-500);
-  --color-team-a-dim: rgba(0, 229, 255, 0.15);
-  --color-team-b: var(--color-pink-500);
-  --color-team-b-dim: rgba(255, 45, 149, 0.15);
+  /* ── Tier 2: semantic ─────────────────────────────────── */
+  --color-surface: var(--color-ink-950);
+  --color-surface-raised: var(--color-ink-900);
+  --color-surface-card: var(--color-ink-850);
+  --color-surface-input: var(--color-ink-800);
+  --color-surface-hover: var(--color-ink-700);
 
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 12px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-8: 32px;
-  --spacing-10: 40px;
-  --spacing-12: 48px;
-  --spacing-16: 64px;
+  --color-content: var(--color-cream-100);
+  --color-content-muted: var(--color-cream-300);
+  --color-content-dim: var(--color-cream-400);
+  --color-content-inverse: var(--color-ink-950);
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --color-line: rgba(244, 239, 232, 0.09);
+  --color-line-strong: rgba(244, 239, 232, 0.16);
+
+  --color-accent: var(--color-amber-400);
+
+  /* Teams: warm vs cool reads instantly, even impaired */
+  --color-team-a: var(--color-amber-400);
+  --color-team-b: var(--color-teal-400);
+
+  /* ── Type ─────────────────────────────────────────────── */
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* ── Radii: restrained, not bubbly ────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  /* ── Elevation: real shadow, zero glow ────────────────── */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lift: 0 8px 24px rgba(0, 0, 0, 0.5);
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 2rem;
-  --text-4xl: 2.5rem;
-
-  --leading-tight: 1.2;
-  --leading-normal: 1.6;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --shadow-glow-pink: 0 0 15px rgba(255, 45, 149, 0.25), 0 0 30px rgba(255, 45, 149, 0.12);
-  --shadow-glow-cyan: 0 0 15px rgba(0, 229, 255, 0.25), 0 0 30px rgba(0, 229, 255, 0.12);
-  --shadow-glow-purple: 0 0 15px rgba(180, 77, 255, 0.25), 0 0 30px rgba(180, 77, 255, 0.12);
-  --shadow-glow-green: 0 0 15px rgba(57, 255, 20, 0.25), 0 0 30px rgba(57, 255, 20, 0.12);
-  --shadow-elevation: 0 4px 20px rgba(0, 0, 0, 0.3);
-
-  --container-max: 480px;
+  --container-max: 460px;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   BASE
+   ═══════════════════════════════════════════════════════════ */
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-surface-primary text-text-primary font-sans antialiased;
+    background: var(--color-surface);
+    color: var(--color-content);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     min-height: 100dvh;
-    line-height: var(--leading-normal);
   }
 
   #root {
-    @apply min-h-dvh flex flex-col;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Amber selection instead of default blue */
+  ::selection {
+    background: var(--color-amber-400);
+    color: var(--color-ink-950);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTS
+   ═══════════════════════════════════════════════════════════ */
 @layer components {
+
   .app-shell {
-    @apply w-full flex flex-col flex-1;
+    width: 100%;
     max-width: var(--container-max);
     margin: 0 auto;
-    padding: var(--spacing-5) var(--spacing-4) calc(80px + env(safe-area-inset-bottom, 0px));
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 20px calc(76px + env(safe-area-inset-bottom, 0px));
   }
 
+  /* ── Wordmark ───────────────────────────────────────── */
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: 58px;
+    line-height: 0.95;
+    letter-spacing: -0.015em;
+    color: var(--color-cream-100);
+  }
+
+  /* The dot is the only ornament in the whole app */
+  .wordmark-dot {
+    color: var(--color-amber-400);
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-content-dim);
+  }
+
+  /* ── Buttons ────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 font-semibold cursor-pointer select-none
-           transition-all duration-200 ease-out no-underline border-none;
-    min-height: 48px;
-    padding: var(--spacing-3) var(--spacing-6);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 14px 24px;
+    border: 1px solid transparent;
     border-radius: var(--radius-md);
-    font-size: var(--text-base);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
     -webkit-tap-highlight-color: transparent;
   }
-  .btn:active { transform: scale(0.97); }
-  .btn:disabled { @apply opacity-40 cursor-not-allowed; transform: none; }
 
-  .btn-primary {
-    background: linear-gradient(135deg, var(--color-action-primary), var(--color-action-secondary));
-    @apply text-white;
-    box-shadow: var(--shadow-glow-pink);
+  .btn:active { transform: translateY(1px); }
+
+  .btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
   }
+
+  /* Primary = cream on ink. Highest contrast thing on screen. */
+  .btn-primary {
+    background: var(--color-cream-100);
+    color: var(--color-ink-950);
+  }
+  .btn-primary:not(:disabled):hover { background: #fff; }
 
   .btn-secondary {
-    @apply bg-surface-elevated text-text-primary;
-    border: 1px solid var(--color-border-default);
+    background: transparent;
+    color: var(--color-content);
+    border-color: var(--color-line-strong);
+  }
+  .btn-secondary:not(:disabled):hover {
+    background: var(--color-surface-card);
+    border-color: var(--color-cream-400);
   }
 
-  .btn-full { @apply w-full; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-content-muted);
+    min-height: 40px;
+    padding: 8px 0;
+    font-weight: 500;
+    font-size: 14px;
+    border: none;
+    align-self: flex-start;
+  }
+  .btn-ghost:hover { color: var(--color-content); }
 
-  .btn-lg {
-    padding: var(--spacing-4) var(--spacing-8);
-    font-size: var(--text-lg);
-    min-height: 56px;
+  .btn-full { width: 100%; }
+
+  /* ── Inputs ─────────────────────────────────────────── */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
   }
 
-  .btn-back {
-    @apply bg-transparent border-none text-text-muted text-sm cursor-pointer self-start;
-    padding: var(--spacing-2);
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-content-dim);
   }
 
   .input {
-    @apply w-full bg-surface-input text-text-primary outline-none;
-    min-height: 48px;
-    padding: var(--spacing-3) var(--spacing-4);
-    border: 2px solid var(--color-border-default);
+    width: 100%;
+    min-height: 52px;
+    padding: 13px 15px;
+    background: var(--color-surface-input);
+    border: 1px solid var(--color-line);
     border-radius: var(--radius-md);
-    font-size: var(--text-base);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    color: var(--color-content);
+    font-family: var(--font-sans);
+    font-size: 16px; /* 16px min prevents iOS zoom-on-focus */
+    transition: border-color 0.15s ease;
+    outline: none;
   }
-  .input:focus {
-    border-color: var(--color-border-focus);
-    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
-  }
-  .input::placeholder { color: var(--color-text-muted); }
+  .input::placeholder { color: var(--color-ink-500); }
+  .input:focus { border-color: var(--color-cream-400); }
 
   .input-code {
-    @apply text-center font-mono uppercase;
-    font-size: var(--text-2xl);
-    letter-spacing: 0.3em;
+    font-family: var(--font-mono);
+    font-size: 22px;
+    letter-spacing: 0.34em;
+    text-align: center;
+    text-transform: uppercase;
+    padding-left: 0.34em; /* optical centring against tracking */
   }
 
+  /* ── Surfaces ───────────────────────────────────────── */
   .card {
-    @apply bg-surface-card;
-    border: 1px solid var(--color-border-default);
+    background: var(--color-surface-card);
+    border: 1px solid var(--color-line);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-5);
+    padding: 16px;
   }
 
-  .bottom-nav {
-    @apply fixed bottom-0 left-1/2 -translate-x-1/2 w-full bg-surface-secondary flex justify-around z-100;
-    max-width: var(--container-max);
-    border-top: 1px solid var(--color-border-default);
-    padding: var(--spacing-2) var(--spacing-4);
-    padding-bottom: max(var(--spacing-2), env(safe-area-inset-bottom, 0px));
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-content-dim);
+    margin-bottom: 10px;
   }
 
-  .bottom-nav a,
-  .bottom-nav button {
-    @apply flex flex-col items-center gap-1 text-text-muted no-underline text-xs font-medium
-           bg-transparent border-none cursor-pointer justify-center;
-    padding: var(--spacing-1) var(--spacing-3);
-    min-height: 48px;
-    transition: color 0.2s;
+  .rule {
+    height: 1px;
+    background: var(--color-line);
+    border: 0;
   }
-  .bottom-nav a.active,
-  .bottom-nav a:hover { color: var(--color-cyan-500); }
 
-  .team-panel {
-    @apply bg-surface-card flex-1;
-    border: 1px solid var(--color-border-default);
+  /* ── Room code: a ticket stub ───────────────────────── */
+  .ticket {
+    position: relative;
+    background: var(--color-surface-card);
+    border: 1px solid var(--color-line);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-4);
+    padding: 22px 20px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
   }
-  .team-panel.team-a { border-color: var(--color-team-a); }
-  .team-panel.team-b { border-color: var(--color-team-b); }
+  .ticket:hover { border-color: var(--color-line-strong); }
 
-  .team-header {
-    @apply flex justify-between items-center mb-3;
+  .ticket-code {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: 0.26em;
+    color: var(--color-cream-100);
+    padding-left: 0.26em;
+    margin: 6px 0 8px;
+  }
+
+  .ticket-hint {
+    font-size: 12px;
+    color: var(--color-content-dim);
+  }
+
+  /* Perforation — reads as a torn stub */
+  .ticket-perf {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px -20px 0;
+    padding: 0 12px;
+  }
+  .ticket-perf::before,
+  .ticket-perf::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed var(--color-ink-600);
+  }
+  .ticket-perf span {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-ink-500);
+  }
+
+  /* ── Now playing ────────────────────────────────────── */
+  .now-playing {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 15px 16px;
+    background: var(--color-surface-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+  }
+
+  .now-playing-title {
+    font-family: var(--font-display);
+    font-size: 21px;
+    line-height: 1.15;
+    color: var(--color-cream-100);
+  }
+
+  .now-playing-meta {
+    font-size: 12.5px;
+    color: var(--color-content-dim);
+    margin-top: 3px;
+  }
+
+  /* ── Search results ─────────────────────────────────── */
+  .result {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    width: 100%;
+    padding: 11px 13px;
+    background: transparent;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.13s ease, border-color 0.13s ease;
+  }
+  .result:hover {
+    background: var(--color-surface-card);
+    border-color: var(--color-line-strong);
+  }
+
+  .result-poster {
+    width: 38px;
+    height: 56px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-ink-800);
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-ink-500);
+    font-size: 15px;
+  }
+
+  .result-title {
+    font-size: 14.5px;
+    font-weight: 550;
+    color: var(--color-content);
+    line-height: 1.3;
+  }
+
+  .result-year {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--color-content-dim);
+    margin-top: 2px;
+  }
+
+  /* ── Team panels ────────────────────────────────────── */
+  .team {
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--color-surface-raised);
+  }
+
+  /* Team identity = a 2px rule, not a glowing outline */
+  .team-a { border-top: 2px solid var(--color-team-a); }
+  .team-b { border-top: 2px solid var(--color-team-b); }
+
+  .team-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 15px 11px;
+  }
+
+  .team-name {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+  .team-a .team-name { color: var(--color-team-a); }
+  .team-b .team-name { color: var(--color-team-b); }
+
+  .team-tally {
+    font-family: var(--font-mono);
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--color-content);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .team-tally-unit {
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-content-dim);
+    margin-left: 4px;
+  }
+
+  /* Read-only opposing panel: present, not competing for attention */
+  .team-passive { opacity: 0.55; }
+
+  /* ── Rules: a list, not a pile of chips ─────────────── */
+  .rule-list {
+    border-top: 1px solid var(--color-line);
   }
 
   .rule-row {
-    @apply flex items-center gap-2 bg-surface-elevated cursor-pointer transition-colors;
-    padding: var(--spacing-2) var(--spacing-3);
-    border-radius: var(--radius-sm);
-    font-size: var(--text-sm);
-    min-height: 48px;
-  }
-  .rule-row:active { background: rgba(255, 109, 0, 0.15); }
-
-  .drink-hit {
-    @apply flex items-center justify-center flex-shrink-0 cursor-pointer;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-full);
-    border: 2px solid var(--color-action-warning);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 11px 15px;
     background: transparent;
-    color: var(--color-action-warning);
-    font-size: var(--text-lg);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: none;
+    border-bottom: 1px solid var(--color-line);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
   }
-  .drink-hit:active {
-    background: var(--color-action-warning);
-    color: var(--color-text-inverse);
-    transform: scale(0.85);
+  .rule-row:last-child { border-bottom: none; }
+  .rule-row:active { background: var(--color-surface-hover); }
+
+  .rule-text {
+    flex: 1;
+    font-size: 14.5px;
+    line-height: 1.35;
+    color: var(--color-content);
   }
 
-  .player-badge {
-    @apply flex items-center gap-2 bg-surface-card text-sm;
-    padding: var(--spacing-2) var(--spacing-3);
-    border: 1px solid var(--color-border-default);
-    border-radius: var(--radius-md);
+  .rule-count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-content-dim);
+    font-variant-numeric: tabular-nums;
+    min-width: 22px;
+    text-align: right;
   }
-  .player-badge.team-a { border-left: 3px solid var(--color-team-a); }
-  .player-badge.team-b { border-left: 3px solid var(--color-team-b); }
 
-  .player-badge .avatar {
-    @apply flex items-center justify-center font-bold text-sm flex-shrink-0;
-    width: 32px;
-    height: 32px;
+  /* The single loud element in the app */
+  .sip {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
     border-radius: var(--radius-full);
+    border: 1.5px solid;
+    background: transparent;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease, transform 0.12s ease;
   }
-  .player-badge.team-a .avatar { background: var(--color-team-a-dim); color: var(--color-team-a); }
-  .player-badge.team-b .avatar { background: var(--color-team-b-dim); color: var(--color-team-b); }
+  .team-a .sip { border-color: var(--color-team-a); color: var(--color-team-a); }
+  .team-b .sip { border-color: var(--color-team-b); color: var(--color-team-b); }
 
-  .drink-alert {
-    @apply fixed top-4 left-4 right-4 mx-auto text-center font-bold text-lg z-200 pointer-events-none;
-    max-width: var(--container-max);
-    padding: var(--spacing-4);
+  .team-a .sip:active { background: var(--color-team-a); color: var(--color-ink-950); transform: scale(0.92); }
+  .team-b .sip:active { background: var(--color-team-b); color: var(--color-ink-950); transform: scale(0.92); }
+
+  .rule-row-passive { cursor: default; }
+  .rule-row-passive:active { background: transparent; }
+
+  /* ── Players ────────────────────────────────────────── */
+  .player {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 11px;
+    background: var(--color-surface-card);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    min-width: 0;
+  }
+
+  .player-mark {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--color-ink-950);
+  }
+  .player-a .player-mark { background: var(--color-team-a); }
+  .player-b .player-mark { background: var(--color-team-b); }
+
+  .player-name {
+    flex: 1;
+    font-size: 13.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .player-host {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-content-dim);
+    flex-shrink: 0;
+  }
+
+  /* ── Drink call-out ─────────────────────────────────── */
+  .callout {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    max-width: calc(var(--container-max) - 8px);
+    margin: 0 auto;
+    padding: 15px 18px;
     border-radius: var(--radius-lg);
-    animation: alert-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: var(--shadow-lift);
+    z-index: 200;
+    pointer-events: none;
+    animation: callout-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
   }
-  .drink-alert.team-a { background: var(--color-team-a); color: var(--color-text-inverse); }
-  .drink-alert.team-b { background: var(--color-team-b); color: white; }
+  .callout-a { background: var(--color-team-a); color: var(--color-ink-950); }
+  .callout-b { background: var(--color-team-b); color: var(--color-ink-950); }
 
-  @keyframes alert-in {
-    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+  .callout-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.75;
   }
+
+  .callout-text {
+    font-size: 15.5px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-top: 3px;
+  }
+
+  @keyframes callout-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Results ────────────────────────────────────────── */
+  .verdict {
+    text-align: center;
+    padding: 30px 20px 26px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+  }
+
+  .verdict-team {
+    font-family: var(--font-display);
+    font-size: 40px;
+    line-height: 1.05;
+    margin: 8px 0 6px;
+  }
+  .verdict-a .verdict-team { color: var(--color-team-a); }
+  .verdict-b .verdict-team { color: var(--color-team-b); }
+
+  .verdict-line {
+    font-size: 13.5px;
+    color: var(--color-content-muted);
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+  }
+
+  .bar-name {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    width: 62px;
+    flex-shrink: 0;
+  }
+  .bar-row-a .bar-name { color: var(--color-team-a); }
+  .bar-row-b .bar-name { color: var(--color-team-b); }
 
   .bar-track {
-    @apply flex-1 bg-surface-elevated rounded-full h-7 overflow-hidden;
+    flex: 1;
+    height: 8px;
+    background: var(--color-ink-800);
+    border-radius: var(--radius-full);
+    overflow: hidden;
   }
 
   .bar-fill {
-    @apply h-full rounded-full flex items-center justify-end font-bold text-xs text-text-inverse;
-    padding-right: var(--spacing-2);
-    min-width: 28px;
-    transition: width 0.6s ease-out;
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.7s cubic-bezier(0.2, 0.8, 0.3, 1);
   }
-  .bar-fill.team-a { background: var(--color-team-a); }
-  .bar-fill.team-b { background: var(--color-team-b); }
+  .bar-row-a .bar-fill { background: var(--color-team-a); }
+  .bar-row-b .bar-fill { background: var(--color-team-b); }
 
-  .movie-result {
-    @apply flex gap-3 items-center bg-surface-card cursor-pointer transition-colors;
-    padding: var(--spacing-3);
-    border: 1px solid var(--color-border-default);
-    border-radius: var(--radius-md);
+  .bar-value {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    width: 30px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
   }
-  .movie-result:hover,
-  .movie-result.selected { border-color: var(--color-cyan-500); }
+
+  .standing {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .standing:last-child { border-bottom: none; }
+
+  .standing-rank {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-content-dim);
+    width: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .standing-lead .standing-rank { color: var(--color-amber-400); }
+
+  .standing-name {
+    flex: 1;
+    font-size: 14.5px;
+    font-weight: 500;
+  }
+
+  .standing-count {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Bottom nav ─────────────────────────────────────── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: var(--container-max);
+    display: flex;
+    justify-content: space-around;
+    background: rgba(10, 9, 8, 0.92);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--color-line);
+    padding: 6px 16px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+    z-index: 100;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 50px;
+    padding: 6px 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-500);
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .nav-item:hover { color: var(--color-content-muted); }
+  .nav-item-active { color: var(--color-content); }
+
+  .nav-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: transparent;
+  }
+  .nav-item-active .nav-dot { background: var(--color-amber-400); }
 }
 
-@utility text-gradient {
-  background: linear-gradient(135deg, var(--color-pink-500), var(--color-purple-500), var(--color-cyan-500));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ═══════════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════════ */
+@utility empty-note {
+  font-size: 13.5px;
+  color: var(--color-content-dim);
+  text-align: center;
+  padding: 22px 16px;
 }
 
-@utility empty-state {
-  @apply text-text-muted text-sm text-center;
-  padding: var(--spacing-6) var(--spacing-4);
+@utility error-note {
+  font-size: 13.5px;
+  color: var(--color-danger-400);
+  text-align: center;
 }
 
-@utility error-msg {
-  @apply text-sm text-center;
-  color: var(--color-action-primary);
+@utility loading-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 40px 16px;
+  font-size: 13.5px;
+  color: var(--color-content-dim);
 }
 
-@utility loading-spinner {
-  @apply flex items-center justify-center text-text-muted text-sm;
-  padding: var(--spacing-10);
+@utility divider-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-500);
 }
-
-@utility section-title {
-  @apply text-sm font-semibold uppercase tracking-wider mb-2;
-  color: var(--color-text-secondary);
-}
-
-@utility divider {
-  @apply flex items-center gap-3 text-text-muted text-xs;
-}
-.divider::before,
-.divider::after {
+.divider-or::before,
+.divider-or::after {
   content: '';
-  @apply flex-1 h-px;
-  background: var(--color-border-default);
+  flex: 1;
+  height: 1px;
+  background: var(--color-line);
 }
 
-@utility winner-banner {
-  @apply text-center mb-4;
-  padding: var(--spacing-8) var(--spacing-4);
-  border-radius: var(--radius-lg);
+/* Breathing dot for "waiting" states — subtle, not a spinner */
+@utility pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-amber-400);
+  animation: pulse-fade 1.6s ease-in-out infinite;
 }
-.winner-banner.team-a { background: var(--color-team-a-dim); color: var(--color-team-a); }
-.winner-banner.team-b { background: var(--color-team-b-dim); color: var(--color-team-b); }
+
+@keyframes pulse-fade {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Lobby from './pages/Lobby';
 import Game from './pages/Game';
@@ -15,31 +15,46 @@ export default function App() {
           <Route path="/results/:code" element={<Results />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <BottomNav />
       </div>
+      <BottomNav />
     </BrowserRouter>
   );
 }
 
+/**
+ * Only shown once a game exists, and every item goes somewhere real.
+ * On the home screen there is nothing to navigate between, so it stays hidden.
+ */
 function BottomNav() {
   const { pathname } = useLocation();
-  const isGame = pathname.startsWith('/lobby') || pathname.startsWith('/game');
-  const isResults = pathname.startsWith('/results');
+  const navigate = useNavigate();
+
+  const match = pathname.match(/^\/(lobby|game|results)\/([A-Z0-9]{6})/i);
+  if (!match) return null;
+
+  const [, section, code] = match;
+  const items = [
+    { key: 'lobby', label: 'Room', to: `/lobby/${code}` },
+    { key: 'game', label: 'Rules', to: `/game/${code}` },
+    { key: 'results', label: 'Score', to: `/results/${code}` },
+  ];
 
   return (
     <nav className="bottom-nav">
-      <a href="/" className={pathname === '/' ? 'active' : ''}>
-        <span className="text-lg">🏠</span>
-        Home
-      </a>
-      <a href="/" className={isGame ? 'active' : ''}>
-        <span className="text-lg">🎬</span>
-        Game
-      </a>
-      <a href="/" className={isResults ? 'active' : ''}>
-        <span className="text-lg">📊</span>
-        Results
-      </a>
+      {items.map((item) => {
+        const active = section.toLowerCase() === item.key;
+        return (
+          <button
+            key={item.key}
+            className={`nav-item ${active ? 'nav-item-active' : ''}`}
+            onClick={() => navigate(item.to)}
+            aria-current={active ? 'page' : undefined}
+          >
+            <span className="nav-dot" />
+            {item.label}
+          </button>
+        );
+      })}
     </nav>
   );
 }

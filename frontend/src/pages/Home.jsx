@@ -9,81 +9,101 @@ export default function Home() {
   const [name, setName] = useState(usePlayerStore.getState().name || '');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(null); // 'create' | 'join' | null
 
   const handleCreate = async () => {
-    if (!name.trim()) return setError('Enter your name');
-    setLoading(true);
+    if (!name.trim()) return setError('Enter your name first');
+    setBusy('create');
+    setError('');
     try {
       const game = await createGame();
-      // Host must also join so they get a real player row (and can log drinks).
       const me = await joinGame(game.code, name.trim());
       saveName(name.trim());
       setPlayer({ id: me.id, name: me.name, isHost: me.is_host });
       navigate(`/lobby/${game.code}`);
-    } catch (e) {
-      setError('Failed to create game');
+    } catch {
+      setError('Could not start a game. Try again.');
+      setBusy(null);
     }
-    setLoading(false);
   };
 
   const handleJoin = async () => {
-    if (!name.trim()) return setError('Enter your name');
-    if (code.length !== 6) return setError('Room code is 6 characters');
-    setLoading(true);
+    if (!name.trim()) return setError('Enter your name first');
+    if (code.length !== 6) return setError('Room codes are 6 characters');
+    setBusy('join');
+    setError('');
     try {
-      const player = await joinGame(code.toUpperCase(), name.trim());
+      const me = await joinGame(code.toUpperCase(), name.trim());
       saveName(name.trim());
-      setPlayer({ id: player.id, name: name.trim(), isHost: player.is_host });
+      setPlayer({ id: me.id, name: me.name, isHost: me.is_host });
       navigate(`/lobby/${code.toUpperCase()}`);
     } catch (e) {
-      setError(e.message || 'Game not found');
+      setError(e.message?.includes('not found') ? 'No game with that code' : 'Could not join');
+      setBusy(null);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center gap-10" style={{ paddingTop: '12vh' }}>
-      <div>
-        <div className="text-6xl mb-2">🍿</div>
-        <h1 className="text-5xl font-bold tracking-tight text-gradient">CineSip</h1>
-        <p className="text-text-secondary mt-2">Watch movies. Drink responsibly.</p>
-      </div>
+    <div className="flex-1 flex flex-col justify-center" style={{ gap: 40, paddingBottom: 24 }}>
+      <header>
+        <p className="eyebrow" style={{ marginBottom: 10 }}>Movie night, with stakes</p>
+        <h1 className="wordmark">
+          CineSip<span className="wordmark-dot">.</span>
+        </h1>
+        <p style={{ color: 'var(--color-content-muted)', fontSize: 15, marginTop: 12, maxWidth: '34ch' }}>
+          Split into teams. Every team gets rules drawn from the film you're
+          actually watching.
+        </p>
+      </header>
 
-      <div className="w-full flex flex-col gap-4">
-        <div className="flex flex-col gap-2 w-full">
-          <label className="text-sm font-semibold text-text-secondary text-left">Your Name</label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="field">
+          <label className="field-label" htmlFor="name">Your name</label>
           <input
+            id="name"
             className="input"
-            placeholder="Enter your drinking alias"
+            placeholder="Daniel"
             value={name}
-            onChange={e => { setName(e.target.value); setError(''); }}
+            onChange={(e) => { setName(e.target.value); setError(''); }}
             maxLength={30}
+            autoComplete="given-name"
           />
         </div>
 
-        <button className="btn btn-primary btn-full btn-lg" onClick={handleCreate} disabled={loading}>
-          🎬 Create New Game
+        <button
+          className="btn btn-primary btn-full"
+          onClick={handleCreate}
+          disabled={busy !== null}
+        >
+          {busy === 'create' ? 'Starting…' : 'Start a game'}
         </button>
 
-        <div className="divider">or join existing</div>
+        <div className="divider-or">or</div>
 
-        <div className="flex flex-col gap-2 w-full">
-          <label className="text-sm font-semibold text-text-secondary text-left">Room Code</label>
+        <div className="field">
+          <label className="field-label" htmlFor="code">Room code</label>
           <input
+            id="code"
             className="input input-code"
-            placeholder="ABC123"
+            placeholder="——————"
             value={code}
-            onChange={e => { setCode(e.target.value.toUpperCase().slice(0, 6)); setError(''); }}
+            onChange={(e) => { setCode(e.target.value.toUpperCase().slice(0, 6)); setError(''); }}
             maxLength={6}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
 
-        <button className="btn btn-secondary btn-full btn-lg" onClick={handleJoin} disabled={loading}>
-          🍿 Join Game
+        <button
+          className="btn btn-secondary btn-full"
+          onClick={handleJoin}
+          disabled={busy !== null}
+        >
+          {busy === 'join' ? 'Joining…' : 'Join a game'}
         </button>
 
-        {error && <p className="error-msg">{error}</p>}
+        {error && <p className="error-note">{error}</p>}
       </div>
     </div>
   );

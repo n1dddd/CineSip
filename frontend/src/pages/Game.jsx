@@ -4,6 +4,8 @@ import usePlayerStore from '../store/playerStore';
 import useGameStore from '../store/gameStore';
 import { getGameState, logDrink, finishGame } from '../services/api';
 
+const TEAM_NAME = ['Amber', 'Teal'];
+
 export default function Game() {
   const { code } = useParams();
   const navigate = useNavigate();
@@ -11,162 +13,131 @@ export default function Game() {
   const { rules, setRules } = useGameStore();
 
   const [game, setGame] = useState(null);
-  const [drinkLogs, setDrinkLogs] = useState([]);
-  const [alert, setAlert] = useState(null);
+  const [logs, setLogs] = useState([]);
+  const [callout, setCallout] = useState(null);
   const [ending, setEnding] = useState(false);
 
-  const myTeam = players.find((p) => p.id === player?.id)?.team ?? 0;
-  const otherTeam = myTeam === 0 ? 1 : 0;
-  const myRules = rules.filter((r) => r.team === myTeam);
-  const otherRules = rules.filter((r) => r.team !== myTeam);
+  const mine = players.find((p) => p.id === player?.id)?.team ?? 0;
+  const theirs = mine === 0 ? 1 : 0;
+  const myRules = rules.filter((r) => r.team === mine);
+  const theirRules = rules.filter((r) => r.team !== mine);
 
-  // Drink totals derived from server logs — every device sees the same numbers.
-  const teamDrinks = useMemo(() => {
-    const byPlayer = new Map(players.map((p) => [p.id, p.team]));
-    const totals = { 0: 0, 1: 0 };
-    for (const log of drinkLogs) {
-      const team = byPlayer.get(log.player_id);
-      if (team === 0 || team === 1) totals[team] += 1;
+  // Totals come from server logs so every phone agrees.
+  const tally = useMemo(() => {
+    const team = new Map(players.map((p) => [p.id, p.team]));
+    const t = { 0: 0, 1: 0 };
+    for (const l of logs) {
+      const side = team.get(l.player_id);
+      if (side === 0 || side === 1) t[side] += 1;
     }
-    return totals;
-  }, [drinkLogs, players]);
+    return t;
+  }, [logs, players]);
 
   const refresh = useCallback(async () => {
     try {
-      const state = await getGameState(code);
-      setGame(state.game);
-      setPlayers(state.players || []);
-      setRules(state.rules || []);
-      setDrinkLogs(state.drink_logs || []);
-      if (state.game?.status === 'finished') {
-        navigate(`/results/${code}`, { replace: true });
-      }
-    } catch (e) {
-      console.error('Game refresh failed', e);
+      const s = await getGameState(code);
+      setGame(s.game);
+      setPlayers(s.players || []);
+      setRules(s.rules || []);
+      setLogs(s.drink_logs || []);
+      if (s.game?.status === 'finished') navigate(`/results/${code}`, { replace: true });
+    } catch {
+      /* transient */
     }
   }, [code, navigate, setPlayers, setRules]);
 
   useEffect(() => {
     refresh();
-    const i = setInterval(refresh, 2500);
-    return () => clearInterval(i);
+    const t = setInterval(refresh, 2500);
+    return () => clearInterval(t);
   }, [refresh]);
 
-  const handleDrink = async (rule) => {
+  const sip = async (rule) => {
     if (!player?.id || !game) return;
-    // Optimistic: show the call-out instantly, reconcile on next poll.
-    setAlert({ team: rule.team, text: rule.description });
-    setTimeout(() => setAlert(null), 3000);
+    setCallout({ team: rule.team, text: rule.description });
+    setTimeout(() => setCallout(null), 2800);
     try {
       await logDrink(game.id, player.id, rule.id);
       refresh();
-    } catch (e) {
-      console.error('Failed to log drink', e);
+    } catch {
+      /* the call-out already fired; next poll reconciles */
     }
   };
 
-  const handleEnd = async () => {
+  const end = async () => {
     setEnding(true);
     try {
       await finishGame(game.id);
       navigate(`/results/${code}`, { replace: true });
-    } catch (e) {
-      console.error(e);
+    } catch {
       setEnding(false);
     }
   };
 
-  if (!game) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="loading-spinner">Loading game...</div>
-      </div>
-    );
-  }
+  if (!game) return <div className="loading-note">Loading…</div>;
 
   return (
-    <div className="flex-1 flex flex-col gap-6">
-      {alert && (
-        <div className={`drink-alert ${alert.team === 0 ? 'team-a' : 'team-b'}`}>
-          🍻 DRINK! — {alert.text}
+    <div className="flex-1 flex flex-col" style={{ gap: 22 }}>
+      {callout && (
+        <div className={`callout ${callout.team === 0 ? 'callout-a' : 'callout-b'}`}>
+          <div className="callout-label">{TEAM_NAME[callout.team]} drinks</div>
+          <div className="callout-text">{callout.text}</div>
         </div>
       )}
 
-      <div className="flex justify-between items-center">
-        <button className="btn-back" onClick={() => navigate(`/lobby/${code}`)}>← Lobby</button>
-        <h2 className="text-gradient text-lg text-center">{game.movie_title}</h2>
-        <div className="w-16" />
-      </div>
+      <header style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ minWidth: 0 }}>
+          <p className="eyebrow">Now playing</p>
+          <h1 className="now-playing-title" style={{ marginTop: 3 }}>{game.movie_title}</h1>
+        </div>
+        <button className="btn btn-ghost" style={{ flexShrink: 0 }} onClick={() => navigate(`/lobby/${code}`)}>
+          Lobby
+        </button>
+      </header>
 
-      <div className="flex flex-col gap-4">
-        {/* Your team — tappable */}
-        <div className={`team-panel ${myTeam === 0 ? 'team-a' : 'team-b'}`}>
-          <div className="team-header">
-            <h3 className="font-semibold">
-              {myTeam === 0 ? '🔵 Your Team (Blue)' : '🔴 Your Team (Red)'}
-            </h3>
-            <span className="font-mono text-lg font-bold text-orange-500">
-              🍺 {teamDrinks[myTeam]}
-            </span>
+      {/* Your rules — the working surface */}
+      <section className={`team ${mine === 0 ? 'team-a' : 'team-b'}`}>
+        <div className="team-head">
+          <div>
+            <div className="team-name">{TEAM_NAME[mine]} · your team</div>
           </div>
-          <div className="flex flex-col gap-2">
-            {myRules.map((rule) => (
-              <div key={rule.id} className="rule-row" onClick={() => handleDrink(rule)}>
-                <span className="flex-1">{rule.description}</span>
-                <span className="font-mono text-xs text-text-muted min-w-6 text-center">
-                  {rule.trigger_count || 0}x
-                </span>
-                <button
-                  className="drink-hit"
-                  aria-label={`Drink for: ${rule.description}`}
-                  onClick={(e) => { e.stopPropagation(); handleDrink(rule); }}
-                >
-                  🍻
-                </button>
-              </div>
-            ))}
-            {myRules.length === 0 && <p className="empty-state">No rules assigned</p>}
+          <div className="team-tally">
+            {tally[mine]}<span className="team-tally-unit">sips</span>
           </div>
         </div>
+        <div className="rule-list">
+          {myRules.map((r) => (
+            <button key={r.id} className="rule-row" onClick={() => sip(r)}>
+              <span className="rule-text">{r.description}</span>
+              <span className="rule-count">{r.trigger_count || 0}</span>
+              <span className="sip" aria-hidden="true">Sip</span>
+            </button>
+          ))}
+          {myRules.length === 0 && <p className="empty-note">No rules assigned</p>}
+        </div>
+      </section>
 
-        {/* Opposing team — read only */}
-        <div className="team-panel opacity-70">
-          <div className="team-header">
-            <h3 className="font-semibold">
-              {otherTeam === 0 ? '🔵 Team Blue' : '🔴 Team Red'}
-            </h3>
-            <span className="font-mono text-lg font-bold text-orange-500">
-              🍺 {teamDrinks[otherTeam]}
-            </span>
-          </div>
-          <div className="flex flex-col gap-2">
-            {otherRules.map((rule) => (
-              <div key={rule.id} className="rule-row">
-                <span className="flex-1">{rule.description}</span>
-                <span className="font-mono text-xs text-text-muted min-w-6 text-center">
-                  {rule.trigger_count || 0}x
-                </span>
-              </div>
-            ))}
-            {otherRules.length === 0 && <p className="empty-state">No rules assigned</p>}
+      {/* Opposition — visible, deliberately quieter */}
+      <section className={`team team-passive ${theirs === 0 ? 'team-a' : 'team-b'}`}>
+        <div className="team-head">
+          <div className="team-name">{TEAM_NAME[theirs]}</div>
+          <div className="team-tally">
+            {tally[theirs]}<span className="team-tally-unit">sips</span>
           </div>
         </div>
-      </div>
-
-      <div>
-        <h3 className="section-title">Players Online</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {players.map((p) => (
-            <div key={p.id} className={`player-badge ${p.team === 0 ? 'team-a' : 'team-b'}`}>
-              <div className="avatar">{p.name[0].toUpperCase()}</div>
-              <span className="flex-1 font-medium truncate">{p.name}</span>
+        <div className="rule-list">
+          {theirRules.map((r) => (
+            <div key={r.id} className="rule-row rule-row-passive">
+              <span className="rule-text">{r.description}</span>
+              <span className="rule-count">{r.trigger_count || 0}</span>
             </div>
           ))}
+          {theirRules.length === 0 && <p className="empty-note">No rules assigned</p>}
         </div>
-      </div>
+      </section>
 
-      <button className="btn btn-secondary btn-full" onClick={handleEnd} disabled={ending}>
-        {ending ? 'Ending…' : '🏁 End Game'}
+      <button className="btn btn-secondary btn-full" onClick={end} disabled={ending}>
+        {ending ? 'Ending…' : 'End the night'}
       </button>
     </div>
   );
