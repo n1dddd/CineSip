@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.lifespan import lifespan
-from app.routes import lobby, game, movies
+from app.routes import game, lobby, movies
 
 app = FastAPI(
     title="CineSip",

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+
 from app.services import movie_search
 
 router = APIRouter(prefix="/api/movies", tags=["movies"])

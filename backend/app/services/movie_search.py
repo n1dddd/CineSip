@@ -1,4 +1,5 @@
 import os
+
 import httpx
 
 TMDB_BASE = "https://api.themoviedb.org/3"

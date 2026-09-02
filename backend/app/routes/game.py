@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from app.models import AddRuleRequest, LogDrinkRequest, RuleOut, DrinkLogOut
+
+from app.models import AddRuleRequest, DrinkLogOut, LogDrinkRequest, RuleOut
 from app.services import game_manager, movie_search, rule_generator
 
 router = APIRouter(prefix="/api/games", tags=["game"])

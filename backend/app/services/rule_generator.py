@@ -1,6 +1,7 @@
-import os
 import json
+import os
 import re
+
 import httpx
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"

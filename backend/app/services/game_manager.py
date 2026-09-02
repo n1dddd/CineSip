@@ -1,7 +1,8 @@
 import random
 import string
+
 from app.database import get_db
-from app.models import GameOut, PlayerOut, RuleOut, DrinkLogOut, GameState
+from app.models import DrinkLogOut, GameOut, GameState, PlayerOut, RuleOut
 
 
 def _generate_code() -> str:

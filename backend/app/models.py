@@ -1,13 +1,11 @@
-from pydantic import BaseModel, Field
-from datetime import datetime
-from typing import Optional
 
+from pydantic import BaseModel, Field
 
 # ── Request models ──
 
 class CreateGameRequest(BaseModel):
-    movie_title: Optional[str] = None
-    movie_id: Optional[int] = None
+    movie_title: str | None = None
+    movie_id: int | None = None
 
 
 class JoinGameRequest(BaseModel):
@@ -35,8 +33,8 @@ class StartGameRequest(BaseModel):
 class GameOut(BaseModel):
     id: int
     code: str
-    movie_title: Optional[str]
-    movie_id: Optional[int]
+    movie_title: str | None
+    movie_id: int | None
     status: str
     created_at: str
 

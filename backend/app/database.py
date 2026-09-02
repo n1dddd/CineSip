@@ -1,15 +1,25 @@
-import aiosqlite
 import os
+
+import aiosqlite
 
 _db: aiosqlite.Connection | None = None
 
-DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.dirname(__file__)), "cinesip.db"))
+_DEFAULT_DB = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cinesip.db")
+
+
+def db_path() -> str:
+    """Resolve the database path at call time, not import time.
+
+    Reading DB_PATH lazily means .env can be loaded after this module is
+    imported (the container sets DB_PATH=/app/data/cinesip.db).
+    """
+    return os.environ.get("DB_PATH", _DEFAULT_DB)
 
 
 async def get_db() -> aiosqlite.Connection:
     global _db
     if _db is None:
-        _db = await aiosqlite.connect(DB_PATH)
+        _db = await aiosqlite.connect(db_path())
         _db.row_factory = aiosqlite.Row
         await _db.execute("PRAGMA journal_mode=WAL")
         await _db.execute("PRAGMA foreign_keys=ON")

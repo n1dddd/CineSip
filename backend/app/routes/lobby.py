@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models import CreateGameRequest, JoinGameRequest, GameOut, PlayerOut, GameState
+
+from app.models import CreateGameRequest, GameOut, GameState, JoinGameRequest, PlayerOut
 from app.services import game_manager
 
 router = APIRouter(prefix="/api", tags=["lobby"])
@@ -20,7 +21,7 @@ async def join_game(req: JoinGameRequest):
     try:
         return await game_manager.join_game(code=req.code, name=req.name)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/games/{code}", response_model=GameState)
