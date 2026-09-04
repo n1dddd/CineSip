@@ -36,6 +36,7 @@ async def init_db():
             movie_title TEXT,
             movie_id INTEGER,
             status TEXT NOT NULL DEFAULT 'lobby' CHECK(status IN ('lobby','active','finished')),
+            rules_status TEXT NOT NULL DEFAULT 'idle',
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
 
@@ -73,6 +74,18 @@ async def init_db():
         """
     )
     await db.commit()
+    await _migrate(db)
+
+
+async def _migrate(db) -> None:
+    """Additive migrations for databases created before a column existed."""
+    cursor = await db.execute("PRAGMA table_info(games)")
+    cols = {row["name"] for row in await cursor.fetchall()}
+    if "rules_status" not in cols:
+        await db.execute(
+            "ALTER TABLE games ADD COLUMN rules_status TEXT NOT NULL DEFAULT 'idle'"
+        )
+        await db.commit()
 
 
 async def close_db():

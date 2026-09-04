@@ -54,6 +54,9 @@ export default function Lobby() {
     return () => clearTimeout(debounce.current);
   }, [query, isHost]);
 
+  // Rule generation is backgrounded server-side: the POST returns 202 straight
+  // away and `rules_status` flips to 'ready' on a later poll. So `writing` is
+  // only the optimistic window before the first poll confirms it.
   const pick = async (movie) => {
     setWriting(true);
     setError('');
@@ -61,11 +64,11 @@ export default function Lobby() {
     setQuery('');
     try {
       await selectMovie(game.id, movie.id, movie.title);
-      await refresh();
-    } catch {
-      setError('Could not write rules for that title. Try another.');
+    } catch (e) {
+      setError(e.message || 'Could not start that film. Try another.');
     }
     setWriting(false);
+    refresh();
   };
 
   const copy = () => {
@@ -88,6 +91,8 @@ export default function Lobby() {
   const teamA = players.filter((p) => p.team === 0);
   const teamB = players.filter((p) => p.team === 1);
   const hasMovie = Boolean(game.movie_title);
+  const generating = writing || game.rules_status === 'generating';
+  const genFailed = game.rules_status === 'error';
   const ready = players.length >= 2 && rules.length > 0;
 
   return (
@@ -110,20 +115,22 @@ export default function Lobby() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="now-playing-title">{game.movie_title}</div>
               <div className="now-playing-meta">
-                {writing
+                {generating
                   ? 'Writing rules…'
-                  : rules.length > 0
-                    ? `${rules.length} rules · ${rules.length / 2} per team`
-                    : 'No rules yet'}
+                  : genFailed
+                    ? "Couldn't write rules — pick the film again"
+                    : rules.length > 0
+                      ? `${rules.length} rules · ${rules.length / 2} per team`
+                      : 'No rules yet'}
               </div>
             </div>
-            {writing && <div className="pulse-dot" style={{ marginTop: 7 }} />}
+            {generating && <div className="pulse-dot" style={{ marginTop: 7 }} />}
           </div>
         ) : !isHost ? (
           <p className="empty-note">Waiting for the host to choose a film…</p>
         ) : null}
 
-        {isHost && !writing && (
+        {isHost && !generating && (
           <div style={{ marginTop: hasMovie ? 12 : 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <input
               className="input"
@@ -192,12 +199,14 @@ export default function Lobby() {
       {error && <p className="error-note">{error}</p>}
 
       {isHost && (
-        <button className="btn btn-primary btn-full" onClick={begin} disabled={!ready || writing}>
+        <button className="btn btn-primary btn-full" onClick={begin} disabled={!ready || generating}>
           {players.length < 2
             ? 'Waiting for one more player'
-            : rules.length === 0
-              ? 'Choose a film first'
-              : 'Begin'}
+            : generating
+              ? 'Writing rules…'
+              : rules.length === 0
+                ? 'Choose a film first'
+                : 'Begin'}
         </button>
       )}
     </div>

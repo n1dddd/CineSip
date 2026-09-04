@@ -151,6 +151,10 @@
     color: var(--color-amber-400);
   }
 
+  /* Letter-spacing adds a trailing gap AFTER the final glyph. In centred text
+     that gap is counted in the box, so the glyphs read as shifted left of true
+     centre. `text-indent` equal to the tracking cancels it. Applied wherever
+     tracked uppercase text is centred (ticket, verdict, divider, nav). */
   .eyebrow {
     font-size: 11px;
     font-weight: 500;
@@ -158,6 +162,8 @@
     text-transform: uppercase;
     color: var(--color-content-dim);
   }
+  .ticket .eyebrow,
+  .verdict .eyebrow { text-indent: 0.16em; }
 
   /* ── Buttons ────────────────────────────────────────── */
   .btn {
@@ -326,6 +332,7 @@
   .ticket-perf span {
     font-size: 10px;
     letter-spacing: 0.18em;
+    text-indent: 0.18em;
     text-transform: uppercase;
     color: var(--color-ink-500);
   }
@@ -415,10 +422,14 @@
 
   .team-head {
     display: flex;
-    align-items: baseline;
+    /* Not `baseline`: a 12px uppercase label and a 19px mono numeral sitting on
+       a shared baseline read as vertically misaligned blocks. Centre the two
+       optical masses instead. */
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 13px 15px 11px;
+    min-height: 48px;
+    padding: 11px 15px;
   }
 
   .team-name {
@@ -431,9 +442,13 @@
   .team-b .team-name { color: var(--color-team-b); }
 
   .team-tally {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
     font-family: var(--font-mono);
     font-size: 19px;
     font-weight: 700;
+    line-height: 1;
     color: var(--color-content);
     font-variant-numeric: tabular-nums;
   }
@@ -442,10 +457,13 @@
     font-family: var(--font-sans);
     font-size: 10.5px;
     font-weight: 500;
+    line-height: 1;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--color-content-dim);
-    margin-left: 4px;
+    /* Tracking adds a trailing gap after the last letter; pull it back so the
+       unit is optically flush with the numeral's right edge. */
+    margin-right: -0.1em;
   }
 
   /* Read-only opposing panel: present, not competing for attention */
@@ -459,10 +477,10 @@
   .rule-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    min-height: 58px;
-    padding: 11px 15px;
+    min-height: 66px;
+    padding: 10px 12px 10px 15px;
     background: transparent;
     border: none;
     border-bottom: 1px solid var(--color-line);
@@ -481,23 +499,37 @@
   }
 
   .rule-count {
+    flex-shrink: 0;
     font-family: var(--font-mono);
     font-size: 12px;
+    line-height: 1;
     color: var(--color-content-dim);
     font-variant-numeric: tabular-nums;
-    min-width: 22px;
-    text-align: right;
+    /* Fixed width + tabular figures: a count going 9 -> 10 must not shove the
+       Sip button sideways mid-tap. */
+    width: 24px;
+    text-align: center;
   }
 
-  /* The single loud element in the app */
+  /* The single loud element in the app.
+
+     MUST be inline-flex: this renders as a <span>, and width/height are
+     ignored on non-replaced INLINE elements — leaving the border hugging the
+     text on the baseline instead of drawing a 46px circle. That was the
+     misaligned tap target on mobile. */
   .sip {
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 46px;
     height: 46px;
+    box-sizing: border-box;
     border-radius: var(--radius-full);
     border: 1.5px solid;
     background: transparent;
     font-size: 11px;
+    line-height: 1;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -512,6 +544,10 @@
 
   .rule-row-passive { cursor: default; }
   .rule-row-passive:active { background: transparent; }
+  /* The passive panel has no Sip button, so its count would sit flush right
+     while the active panel's is inset by 46px + gap. Reserve the same space so
+     the two counters line up down the screen. */
+  .rule-row-passive .rule-count { margin-right: calc(46px + 10px); }
 
   /* ── Players ────────────────────────────────────────── */
   .player {
@@ -535,6 +571,10 @@
     justify-content: center;
     font-size: 11.5px;
     font-weight: 700;
+    line-height: 1;
+    /* Uppercase glyphs have no descender, so a metrically centred letter reads
+       as sitting too low. Lift by a hair. */
+    padding-bottom: 1px;
     color: var(--color-ink-950);
   }
   .player-a .player-mark { background: var(--color-team-a); }
@@ -609,7 +649,9 @@
     font-family: var(--font-display);
     font-size: 40px;
     line-height: 1.05;
-    margin: 8px 0 6px;
+    /* Serif display type carries more space above the cap than below the
+       baseline; trim the top margin so the word sits optically centred. */
+    margin: 6px 0 8px;
   }
   .verdict-a .verdict-team { color: var(--color-team-a); }
   .verdict-b .verdict-team { color: var(--color-team-b); }
@@ -623,7 +665,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 9px 0;
+    min-height: 34px;
+    padding: 6px 0;
   }
 
   .bar-name {
@@ -717,9 +760,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
+    flex: 1;
     min-height: 50px;
-    padding: 6px 14px;
+    padding: 6px 8px;
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.08em;
@@ -733,6 +777,8 @@
   }
   .nav-item:hover { color: var(--color-content-muted); }
   .nav-item-active { color: var(--color-content); }
+  /* Centred + tracked: cancel the trailing letter-space. */
+  .nav-item { text-indent: 0.08em; }
 
   .nav-dot {
     width: 4px;
@@ -776,6 +822,7 @@
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.14em;
+  text-indent: 0.14em;
   text-transform: uppercase;
   color: var(--color-ink-500);
 }

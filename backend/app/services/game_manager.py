@@ -118,9 +118,37 @@ async def set_movie(game_id: int, movie_title: str, movie_id: int) -> GameOut | 
 
 
 async def clear_rules(game_id: int) -> None:
-    """Remove all rules for a game (used when re-picking a movie)."""
+    """Remove all rules for a game (used when re-picking a movie).
+
+    drink_logs.rule_id is ON DELETE CASCADE, so this destroys the score. Only
+    safe while the game is still in the lobby — the route enforces that.
+    """
     db = await get_db()
     await db.execute("DELETE FROM rules WHERE game_id = ?", (game_id,))
+    await db.commit()
+
+
+async def replace_rules(game_id: int, rules: list[dict]) -> list[RuleOut]:
+    """Atomically swap in a new rule set. One transaction, one commit."""
+    db = await get_db()
+    await db.execute("DELETE FROM rules WHERE game_id = ?", (game_id,))
+    await db.executemany(
+        "INSERT INTO rules (game_id, team, description) VALUES (?, ?, ?)",
+        [(game_id, r["team"], r["description"]) for r in rules],
+    )
+    await db.commit()
+    cursor = await db.execute(
+        "SELECT * FROM rules WHERE game_id = ? ORDER BY id", (game_id,)
+    )
+    return [RuleOut(**dict(r)) async for r in cursor]
+
+
+async def set_rules_status(game_id: int, status: str) -> None:
+    """Track rule generation: idle | generating | ready | fallback | error."""
+    db = await get_db()
+    await db.execute(
+        "UPDATE games SET rules_status = ? WHERE id = ?", (status, game_id)
+    )
     await db.commit()
 
 
@@ -134,6 +162,19 @@ async def add_rule(game_id: int, team: int, description: str) -> RuleOut:
     cursor = await db.execute("SELECT * FROM rules WHERE id = ?", (cursor.lastrowid,))
     row = await cursor.fetchone()
     return RuleOut(**dict(row))
+
+
+async def owns_player_and_rule(game_id: int, player_id: int, rule_id: int) -> bool:
+    """Verify both the player and the rule belong to this game before logging."""
+    db = await get_db()
+    cursor = await db.execute(
+        """SELECT
+             (SELECT COUNT(*) FROM players WHERE id = ? AND game_id = ?) AS p,
+             (SELECT COUNT(*) FROM rules   WHERE id = ? AND game_id = ?) AS r""",
+        (player_id, game_id, rule_id, game_id),
+    )
+    row = await cursor.fetchone()
+    return bool(row and row["p"] and row["r"])
 
 
 async def log_drink(player_id: int, rule_id: int) -> DrinkLogOut:

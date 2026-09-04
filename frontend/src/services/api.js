@@ -77,7 +77,7 @@ export async function addRule(gameId, team, description) {
   const res = await fetch(`${API_BASE}/api/games/${gameId}/rules`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ game_id: gameId, team, description }),
+    body: JSON.stringify({ team, description }),
   });
   if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
   return res.json();

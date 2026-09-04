@@ -14,9 +14,9 @@ class JoinGameRequest(BaseModel):
 
 
 class AddRuleRequest(BaseModel):
-    game_id: int
+    # NOTE: no game_id — the route takes it from the path.
     team: int = Field(ge=0, le=1)
-    description: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=110)
 
 
 class LogDrinkRequest(BaseModel):
@@ -36,6 +36,7 @@ class GameOut(BaseModel):
     movie_title: str | None
     movie_id: int | None
     status: str
+    rules_status: str = "idle"
     created_at: str
 
 

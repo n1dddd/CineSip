@@ -90,7 +90,7 @@ export default function Game() {
           <p className="eyebrow">Now playing</p>
           <h1 className="now-playing-title" style={{ marginTop: 3 }}>{game.movie_title}</h1>
         </div>
-        <button className="btn btn-ghost" style={{ flexShrink: 0 }} onClick={() => navigate(`/lobby/${code}`)}>
+        <button className="btn btn-ghost" style={{ flexShrink: 0, alignSelf: 'center' }} onClick={() => navigate(`/lobby/${code}`)}>
           Lobby
         </button>
       </header>
